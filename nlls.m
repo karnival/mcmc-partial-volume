@@ -22,7 +22,10 @@ func = @(v)( (v(1)*exp(-TEs/T2(1)) + v(2)*exp(-TEs/T2(2)) + v(3)*exp(-TEs/T2(3))
 % generate noisy data -- don't bother saving the noise, though
 sigma_n = 0.05;
 
-y = noise_generator(v_t, sigma_n, func, 1);
+for i=1:1000
+    y = noise_generator(v_t, sigma_n, func, 1);
 
-% minimise squared error over v_m, subject to constraints
-v_m = fmincon((@(v_m)(norm(y-func(v_m)))), [0.6; 0.3; 0.1], [], [], [1 1 1], 1, [0; 0; 0], [1; 1; 1]);
+    % minimise squared error over v_m, subject to constraints
+    v_m(:,i) = fmincon((@(v_m)(norm(y-func(v_m)))), [0.6; 0.3; 0.1], [], [], [1 1 1], 1, [0; 0; 0], [1; 1; 1]);
+
+end
