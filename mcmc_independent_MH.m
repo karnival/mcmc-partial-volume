@@ -4,8 +4,51 @@
 
 clear all;
 
-max_iterations = 1000;
+%% set up function and generate noisy data
+% S/S_0 = v1*exp(-TE/T2_1) + v2*exp(-TE/T2_2) + v3*exp(-TE/T2_3)
+% v1+v2+v3 = 1
+
+clear all;
+
+% independent variable is time
+
+TE_min = 50E-3;
+TE_max = 150E-3;
+
+TEs = [TE_min:10E-3:TE_max];
+
+% grey, white, csf
+T2  = [110E-3; 80E-3; 400E-3];
+
+% true volume fractions
+v_t = [0.7; 0.2; 0.1];
+
+% define func to create data and test against
+func = @(v)( (v(1)*exp(-TEs/T2(1)) + v(2)*exp(-TEs/T2(2)) + v(3)*exp(-TEs/T2(3))) ...
+              .* heaviside_asymm(TEs - TE_min) .* heaviside_asymm(TE_max - TEs) );
+
+% generate noisy data -- don't bother saving the noise, though
+% TODO: frame this in terms of SNR
+sigma_n = 0.05;
+
+% repeated measurements
+repetitions = 10;
+
+for i=1:repetitions
+    y(i,:) = noise_generator(v_t, sigma_n, func, 1);
+
+end
+
+
+%% begin MCMC stuff
+
+max_iterations = 10000;
 burn_in = max_iterations*0.3;
+
+accepted = 0;
+rejected = 0;
+
+samples = [];
 
 % feasible region falls within one SD of sampling distrib => sets sigma_s
 % sample two dimensions because equality constraint reduces to 2D problem
@@ -45,5 +88,18 @@ for i=2:max_iterations
         mvnpdf(prop(i,  :), mu_s, sigma_s);
         
     % remember: log-likelihood here for stability's sake
-    %log_r = lognpdf(prop_xyz(:,i))) - lognpdf(prop_xyz(:,i-1)))
+    % will need to account for changing variance later
+    A = sum((y(1,:) - func(prop_xyz(:,i)  )).^2) - (length(y(1,:))/2) * (log(2*pi) + log(sigma_n));
+    B = sum((y(1,:) - func(prop_xyz(:,i-1))).^2) - (length(y(1,:))/2) * (log(2*pi) + log(sigma_n));
+
+    alpha = min(1, exp(log(c) + A - B));
+    
+    u = rand();
+    
+    if u < alpha
+        accepted = accepted + 1;
+        samples = [samples prop_xyz(:,i)];
+    else
+        rejected = rejected + 1;
+    end
 end
