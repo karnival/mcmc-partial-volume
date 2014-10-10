@@ -22,6 +22,7 @@ func = @(v)( (v(1)*exp(-TEs/T2(1)) + v(2)*exp(-TEs/T2(2)) + v(3)*exp(-TEs/T2(3))
               .* heaviside(TEs - TE_min) .* heaviside(TE_max - TEs) );
 
 % generate noisy data -- don't bother saving the noise, though
+% TODO: frame this in terms of SNR
 sigma_n = 0.05;
 
 % repeated measurements
@@ -35,3 +36,5 @@ end
 % minimise squared error over v_m
 % constraints: sum(v_m)=1, v_m(i)>0
 v_m = fmincon((@(v_m)(norm(y - (func(v_m)'*ones(1,repetitions))' ))), [0.6; 0.3; 0.1], [], [], [1 1 1], 1, [0; 0; 0], [1; 1; 1]);
+
+% note: it's hard to distinguish between exponentials with similar T2
