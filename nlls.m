@@ -6,10 +6,11 @@
 clear all;
 
 % independent variable is time
-TEs = [0:10E-3:160E-3];
 
 TE_min = 50E-3;
 TE_max = 150E-3;
+
+TEs = [TE_min:10E-3:TE_max];
 
 % grey, white, csf
 T2  = [110E-3; 80E-3; 400E-3];
@@ -19,7 +20,7 @@ v_t = [0.7; 0.2; 0.1];
 
 % define func to create data and test against
 func = @(v)( (v(1)*exp(-TEs/T2(1)) + v(2)*exp(-TEs/T2(2)) + v(3)*exp(-TEs/T2(3))) ...
-              .* heaviside(TEs - TE_min) .* heaviside(TE_max - TEs) );
+              .* heaviside_asymm(TEs - TE_min) .* heaviside_asymm(TE_max - TEs) );
 
 % generate noisy data -- don't bother saving the noise, though
 % TODO: frame this in terms of SNR
