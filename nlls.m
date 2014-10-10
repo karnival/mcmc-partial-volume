@@ -3,6 +3,8 @@
 % S/S_0 = v1*exp(-TE/T2_1) + v2*exp(-TE/T2_2) + v3*exp(-TE/T2_3)
 % v1+v2+v3 = 1
 
+clear all;
+
 % independent variable is time
 TEs = [0:10E-3:160E-3];
 
@@ -22,10 +24,12 @@ func = @(v)( (v(1)*exp(-TEs/T2(1)) + v(2)*exp(-TEs/T2(2)) + v(3)*exp(-TEs/T2(3))
 % generate noisy data -- don't bother saving the noise, though
 sigma_n = 0.05;
 
-for i=1:1000
-    y = noise_generator(v_t, sigma_n, func, 1);
+repetitions = 10;
 
-    % minimise squared error over v_m, subject to constraints
-    v_m(:,i) = fmincon((@(v_m)(norm(y-func(v_m)))), [0.6; 0.3; 0.1], [], [], [1 1 1], 1, [0; 0; 0], [1; 1; 1]);
+for i=1:repetitions
+    y(i,:) = noise_generator(v_t, sigma_n, func, 1);
 
 end
+
+% minimise squared error over v_m, subject to constraints
+v_m = fmincon((@(v_m)(norm(y - (func(v_m)'*ones(1,repetitions))' ))), [0.6; 0.3; 0.1], [], [], [1 1 1], 1, [0; 0; 0], [1; 1; 1]);
