@@ -29,7 +29,7 @@ func = @(v)( (v(1)*exp(-TEs/T2(1)) + v(2)*exp(-TEs/T2(2)) + v(3)*exp(-TEs/T2(3))
 
 % generate noisy data -- don't bother saving the noise, though
 % TODO: frame this in terms of SNR
-sigma_n = 0.05;
+sigma_n = 0.02;
 
 % repeated measurements
 repetitions = 10;
@@ -48,7 +48,8 @@ burn_in = max_iterations*0.3;
 accepted = 0;
 rejected = 0;
 
-samples = [];
+samples = []; % accepted samples
+draws   = []; % all proposed samples
 
 % feasible region falls within one SD of sampling distrib => sets sigma_s
 % sample two dimensions because equality constraint reduces to 2D problem
@@ -111,4 +112,9 @@ for i=2:max_iterations
         samples_orig = [samples_orig; samples_orig(end,:)];
         samples_xyz  = [samples_xyz;  samples_xyz(end,:)];
     end
+    
+    draws = [draws; prop_xyz];
 end
+
+% trace plot
+% plot(draws(:,1))
