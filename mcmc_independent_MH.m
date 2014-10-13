@@ -42,7 +42,7 @@ end
 
 %% begin MCMC stuff
 
-max_iterations = 10000;
+max_iterations = 1000;
 burn_in = max_iterations*0.3;
 
 accepted = 0;
@@ -60,17 +60,19 @@ mu_s    = [0 0];
 centre_s= [1/3; 1/3; 1/3]; % centre of proposal distrib in xyz space
 
 % initialise based on priors
-prop(1,:) = [0 0];
+% samples in x'y' space
+samples_orig(1,:) = [0 0];
+samples_xyz(1,:)  = [1/3 1/3 1/3];
 
 for i=2:max_iterations
     % generate a feasible proposal
     feasible = 0;
     while feasible ~= 1
         % sample proposal in x'y' space
-        prop(i,:) = mvnrnd(mu_s, sigma_s);
-        if(     prop(i,2) < sqrt(2/3) - prop(i,1)*sqrt(3) ...
-                &&   prop(i,2) < sqrt(2/3) + prop(i,1)*sqrt(3) ...
-                &&   prop(i,2) > -1/sqrt(6)  )
+        prop = mvnrnd(mu_s, sigma_s);
+        if(     prop(2) < sqrt(2/3) - prop(1)*sqrt(3) ...
+                &&   prop(2) < sqrt(2/3) + prop(1)*sqrt(3) ...
+                &&   prop(2) > -1/sqrt(6)  )
             feasible = 1;
         else
             feasible = 0;
@@ -78,28 +80,35 @@ for i=2:max_iterations
     end
     
     % translate prop (x' y') to xyz space
-    prop_xyz(:,i) = centre_s + (prop(i,1) * [-1/sqrt(2); 1/sqrt(2); 0]) + (prop(i,2) * [-1/sqrt(6); -1/sqrt(6); 2/sqrt(6)]);
-
+    prop_xyz = centre_s + (prop(1) * [-1/sqrt(2); 1/sqrt(2); 0]) + (prop(2) * [-1/sqrt(6); -1/sqrt(6); 2/sqrt(6)]);
+    prop_xyz = prop_xyz';
+    
     % test plot to show distribution on feasible surface
     % plot3(prop_xyz(1,:), prop_xyz(2,:), prop_xyz(3,:), '.')
     
     % normalising factor
-    c = mvnpdf(prop(i-1,:), mu_s, sigma_s) / ...
-        mvnpdf(prop(i,  :), mu_s, sigma_s);
+    c = mvnpdf(samples_orig(i-1,:), mu_s, sigma_s) / ...
+        mvnpdf(prop,                mu_s, sigma_s);
         
     % remember: log-likelihood here for stability's sake
     % will need to account for changing variance later
-    A = sum((y(1,:) - func(prop_xyz(:,i)  )).^2) - (length(y(1,:))/2) * (log(2*pi) + log(sigma_n));
-    B = sum((y(1,:) - func(prop_xyz(:,i-1))).^2) - (length(y(1,:))/2) * (log(2*pi) + log(sigma_n));
+    A = sum((y(1,:) - func(prop_xyz          )).^2)/(2*sigma_n^2);
+    B = sum((y(1,:) - func(samples_xyz(i-1,:))).^2)/(2*sigma_n^2);
 
-    alpha = min(1, exp(log(c) + A - B));
+    % priors are taken here as equal to transition distrib
+    prior_ratio = mvnpdf(prop, mu_s, sigma_s) / mvnpdf(samples_orig(i-1,:), mu_s, sigma_s);
+    
+    alpha = min(1, c*exp(A - B)*prior_ratio);
     
     u = rand();
     
     if u < alpha
         accepted = accepted + 1;
-        samples = [samples prop_xyz(:,i)];
+        samples_orig = [samples_orig; prop];
+        samples_xyz  = [samples_xyz;  prop_xyz];
     else
         rejected = rejected + 1;
+        samples_orig = [samples_orig; samples_orig(end,:)];
+        samples_xyz  = [samples_xyz;  samples_xyz(end,:)];
     end
 end
