@@ -42,7 +42,7 @@ end
 
 %% begin MCMC stuff
 
-max_iterations = 1000;
+max_iterations = 100000;
 burn_in = max_iterations*0.3;
 
 accepted = 0;
@@ -92,13 +92,13 @@ for i=2:max_iterations
         
     % remember: log-likelihood here for stability's sake
     % will need to account for changing variance later
-    A = sum((y(1,:) - func(prop_xyz          )).^2)/(2*sigma_n^2);
-    B = sum((y(1,:) - func(samples_xyz(i-1,:))).^2)/(2*sigma_n^2);
+    A = -sum((y(1,:) - func(prop_xyz          )).^2)/(2*sigma_n^2);
+    B = -sum((y(1,:) - func(samples_xyz(i-1,:))).^2)/(2*sigma_n^2);
 
     % priors are taken here as equal to transition distrib
-    prior_ratio = mvnpdf(prop, mu_s, sigma_s) / mvnpdf(samples_orig(i-1,:), mu_s, sigma_s);
+    % prior_ratio = mvnpdf(prop, mu_s, sigma_s) / mvnpdf(samples_orig(i-1,:), mu_s, sigma_s);
     
-    alpha = min(1, c*exp(A - B)*prior_ratio);
+    alpha = min(1, c*exp(A - B));
     
     u = rand();
     
