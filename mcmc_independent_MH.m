@@ -96,8 +96,8 @@ for i=2:max_iterations
         
     % remember: log-likelihood here for stability's sake
     % will need to account for changing variance later
-    A = -sum((y(1,:) - func(prop_xyz          )).^2)/(2*sigma_n^2);
-    B = -sum((y(1,:) - func(samples_xyz(i-1,:))).^2)/(2*sigma_n^2);
+    A = -sum((y - repmat(func(prop_xyz          ), repetitions, 1)).^2)/(2*sigma_n^2);
+    B = -sum((y - repmat(func(samples_xyz(i-1,:)), repetitions, 1)).^2)/(2*sigma_n^2);
 
     % priors are taken here as equal to transition distrib
     % prior_ratio = mvnpdf(prop, mu_s, sigma_s) / mvnpdf(samples_orig(i-1,:), mu_s, sigma_s);
