@@ -28,8 +28,11 @@ func = @(v)( (v(1)*exp(-TEs/T2(1)) + v(2)*exp(-TEs/T2(2)) + v(3)*exp(-TEs/T2(3))
               .* heaviside_asymm(TEs - TE_min) .* heaviside_asymm(TE_max - TEs) );
 
 % generate noisy data -- don't bother saving the noise, though
-% TODO: frame this in terms of SNR
-sigma_n = 0.02;
+% TODO: recalculate this at runtime based upon v_t and desired SNR
+% Say SNR ~5dB => 20*log_10(sigma_s/sigma_n)
+% sigma_s = 0.1195
+% => sigma_n = 0.1195 / 10^0.25 = 0.0672
+sigma_n = 0.07;
 
 % repeated measurements
 repetitions = 10;
@@ -42,7 +45,7 @@ end
 
 %% begin MCMC stuff
 
-max_iterations = 100000;
+max_iterations = 10000;
 burn_in = max_iterations*0.3;
 
 accepted = 0;
