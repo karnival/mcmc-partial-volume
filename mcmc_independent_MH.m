@@ -23,6 +23,10 @@ T2  = [110E-3; 80E-3; 400E-3];
 % true volume fractions
 v_t = [0.7; 0.2; 0.1];
 
+% priors
+mu_prior_xyz    = [0.65 0.25 0.1];
+sigma_prior_xyz = [0.01 0 0; 0 0.01 0; 0 0 0.01];
+
 % define func to create data and test against
 func = @(v)( (v(1)*exp(-TEs/T2(1)) + v(2)*exp(-TEs/T2(2)) + v(3)*exp(-TEs/T2(3))) ...
               .* heaviside_asymm(TEs - TE_min) .* heaviside_asymm(TE_max - TEs) );
@@ -63,17 +67,18 @@ mu_s    = [0 0];
 
 centre_s= [1/3; 1/3; 1/3]; % centre of proposal distrib in xyz space
 
-% initialise based on priors
+% initialise at centre of feasible space
 % samples in x'y' space
 samples_orig(1,:) = [0 0];
 samples_xyz(1,:)  = [1/3 1/3 1/3];
+
 
 for i=2:max_iterations
     % generate a feasible proposal
     feasible = 0;
     while feasible ~= 1
         % sample proposal in x'y' space
-        prop = mvnrnd(mu_s, sigma_s);
+        prop = mvnrnd(mu_s, sigma_s^2);
         if(     prop(2) < sqrt(2/3) - prop(1)*sqrt(3) ...
                 &&   prop(2) < sqrt(2/3) + prop(1)*sqrt(3) ...
                 &&   prop(2) > -1/sqrt(6)  )
@@ -91,13 +96,15 @@ for i=2:max_iterations
     % plot3(prop_xyz(1,:), prop_xyz(2,:), prop_xyz(3,:), '.')
     
     % normalising factor
-    c = mvnpdf(samples_orig(i-1,:), mu_s, sigma_s) / ...
-        mvnpdf(prop,                mu_s, sigma_s);
+    c = mvnpdf(samples_orig(i-1,:), mu_s, sigma_s^2) / ...
+        mvnpdf(prop,                mu_s, sigma_s^2);
         
     % remember: log-likelihood here for stability's sake
     % will need to account for changing variance later
-    A = -sum((y - repmat(func(prop_xyz          ), repetitions, 1)).^2)/(2*sigma_n^2);
-    B = -sum((y - repmat(func(samples_xyz(i-1,:)), repetitions, 1)).^2)/(2*sigma_n^2);
+    A = -sum((y - repmat(func(prop_xyz          ), repetitions, 1)).^2)/(2*sigma_n^2) ...
+        - log(mvnpdf(prop_xyz, mu_prior_xyz, sigma_prior_xyz)); % prior
+    B = -sum((y - repmat(func(samples_xyz(i-1,:)), repetitions, 1)).^2)/(2*sigma_n^2) ...
+        - log(mvnpdf(samples_xyz(i-1,:), mu_prior_xyz, sigma_prior_xyz));
 
     % priors are taken here as equal to transition distrib
     % prior_ratio = mvnpdf(prop, mu_s, sigma_s) / mvnpdf(samples_orig(i-1,:), mu_s, sigma_s);
