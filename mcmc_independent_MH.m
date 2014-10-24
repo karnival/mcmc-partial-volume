@@ -24,7 +24,7 @@ T2  = [110E-3; 80E-3; 400E-3];
 v_t = [0.7; 0.2; 0.1];
 
 % priors
-mu_prior_xyz    = [0.65 0.25 0.1];
+v_prior_xyz    = [0.65 0.25 0.1];
 sigma_prior_xyz = [0.01 0 0; 0 0.01 0; 0 0 0.01];
 
 % define func to create data and test against
@@ -49,7 +49,7 @@ end
 
 %% begin MCMC stuff
 
-max_iterations = 10000;
+max_iterations = 100000;
 burn_in = max_iterations*0.3;
 
 accepted = 0;
@@ -102,9 +102,9 @@ for i=2:max_iterations
     % remember: log-likelihood here for stability's sake
     % will need to account for changing variance later
     A = -sum((y - repmat(func(prop_xyz          ), repetitions, 1)).^2)/(2*sigma_n^2) ...
-        - log(mvnpdf(prop_xyz, mu_prior_xyz, sigma_prior_xyz)); % prior
+        + log(mvnpdf(prop_xyz, v_prior_xyz, sigma_prior_xyz)); % prior
     B = -sum((y - repmat(func(samples_xyz(i-1,:)), repetitions, 1)).^2)/(2*sigma_n^2) ...
-        - log(mvnpdf(samples_xyz(i-1,:), mu_prior_xyz, sigma_prior_xyz));
+        + log(mvnpdf(samples_xyz(i-1,:), v_prior_xyz, sigma_prior_xyz)); % prior
 
     % priors are taken here as equal to transition distrib
     % prior_ratio = mvnpdf(prop, mu_s, sigma_s) / mvnpdf(samples_orig(i-1,:), mu_s, sigma_s);
