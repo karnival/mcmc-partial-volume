@@ -24,8 +24,8 @@ T2  = [110E-3; 80E-3; 400E-3];
 v_t = [0.7; 0.2; 0.1];
 
 % priors
-v_prior_xyz    = [0.65 0.25 0.1];
-sigma_prior_xyz = [0.01 0 0; 0 0.01 0; 0 0 0.01];
+v_prior_xyz    = [1/3 1/3 1/3];
+sigma_prior_xyz = eye(3)*1E6; % covariance matrix 
 
 % define func to create data and test against
 func = @(v)( (v(1)*exp(-TEs/T2(1)) + v(2)*exp(-TEs/T2(2)) + v(3)*exp(-TEs/T2(3))) ...
@@ -58,8 +58,8 @@ rejected = 0;
 samples = []; % accepted samples
 draws   = []; % all proposed samples
 
-% feasible region falls within one SD of sampling distrib => sets sigma_s
-% sample two dimensions because equality constraint reduces to 2D problem
+% say feasible region falls within one SD of sampling distrib => sets sigma_s.
+% sample two dimensions because equality constraint reduces to 2D problem.
 % this doesn't sample uniformly over the triangle, but hopefully that won't
 % matter
 sigma_s = sqrt(2/3)*eye(2,2);
@@ -105,9 +105,6 @@ for i=2:max_iterations
         + log(mvnpdf(prop_xyz, v_prior_xyz, sigma_prior_xyz)); % prior
     B = -sum((y - repmat(func(samples_xyz(i-1,:)), repetitions, 1)).^2)/(2*sigma_n^2) ...
         + log(mvnpdf(samples_xyz(i-1,:), v_prior_xyz, sigma_prior_xyz)); % prior
-
-    % priors are taken here as equal to transition distrib
-    % prior_ratio = mvnpdf(prop, mu_s, sigma_s) / mvnpdf(samples_orig(i-1,:), mu_s, sigma_s);
     
     alpha = min(1, c*exp(A - B));
     
@@ -127,4 +124,4 @@ for i=2:max_iterations
 end
 
 % trace plot
-% plot(draws(:,1))
+% plot(samples_xyz(:,1))
