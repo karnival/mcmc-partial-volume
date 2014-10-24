@@ -100,7 +100,6 @@ for i=2:max_iterations
         mvnpdf(prop,                mu_s, sigma_s^2);
         
     % remember: log-likelihood here for stability's sake
-    % will need to account for changing variance later
     A = -sum((y - repmat(func(prop_xyz          ), repetitions, 1)).^2)/(2*sigma_n^2) ...
         + log(mvnpdf(prop_xyz, v_prior_xyz, sigma_prior_xyz)); % prior
     B = -sum((y - repmat(func(samples_xyz(i-1,:)), repetitions, 1)).^2)/(2*sigma_n^2) ...
