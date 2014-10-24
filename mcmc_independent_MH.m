@@ -1,15 +1,12 @@
 % Independent Metropolis-Hastings sampling to infer v_1, v_2 and v_3.
+% S/S_0 = v1*exp(-TE/T2_1) + v2*exp(-TE/T2_2) + v3*exp(-TE/T2_3)
+% v1+v2+v3 = 1
 
 % TODO: infer T2_csf, sigma_n
 
 clear all;
 
-%% set up function and generate noisy data
-% S/S_0 = v1*exp(-TE/T2_1) + v2*exp(-TE/T2_2) + v3*exp(-TE/T2_3)
-% v1+v2+v3 = 1
-
-clear all;
-
+%% set up constants
 % independent variable is time
 
 TE_min = 50E-3;
@@ -23,15 +20,21 @@ T2  = [110E-3; 80E-3; 400E-3];
 % true volume fractions
 v_t = [0.7; 0.2; 0.1];
 
-% priors
-v_prior_xyz    = [1/3 1/3 1/3];
-sigma_prior_xyz = eye(3)*1E6; % covariance matrix 
+%% priors
 
-% define func to create data and test against
+% uninformative:
+% v_prior_xyz    = [1/3 1/3 1/3];
+% sigma_prior_xyz = eye(3)*1E6; % covariance matrix 
+
+% informative:
+v_prior_xyz     = [0.6 0.3 0.1];
+sigma_prior_xyz = eye(3) * 0.1;
+
+%% define func to create data and test against
 func = @(v)( (v(1)*exp(-TEs/T2(1)) + v(2)*exp(-TEs/T2(2)) + v(3)*exp(-TEs/T2(3))) ...
               .* heaviside_asymm(TEs - TE_min) .* heaviside_asymm(TE_max - TEs) );
 
-% generate noisy data -- don't bother saving the noise, though
+%% generate noisy data -- don't bother saving the noise, though
 % TODO: recalculate this at runtime based upon v_t and desired SNR
 % Say SNR ~5dB => 20*log_10(sigma_s/sigma_n)
 % sigma_s = 0.1195
@@ -55,7 +58,6 @@ burn_in = max_iterations*0.3;
 accepted = 0;
 rejected = 0;
 
-samples = []; % accepted samples
 draws   = []; % all proposed samples
 
 % say feasible region falls within one SD of sampling distrib => sets sigma_s.
@@ -121,6 +123,20 @@ for i=2:max_iterations
     
     draws = [draws; prop_xyz];
 end
+
+figure;
+subplot(2,2,1);
+hist(samples_xyz(burn_in:end,1), 30);
+title('v_g');
+subplot(2,2,2);
+hist(samples_xyz(burn_in:end,2), 30);
+title('v_w');
+subplot(2,2,3);
+hist(samples_xyz(burn_in:end,3), 30);
+title('v_c');
+subplot(2,2,4);
+hist3([samples_xyz(burn_in:end,1) samples_xyz(burn_in:end,2)]);
+title('v_g, v_w');
 
 % trace plot
 % plot(samples_xyz(:,1))
